@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    // TODO: Firebase 로그인 연결ㅇ
+    // TODO: Firebase 로그인 연결
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
