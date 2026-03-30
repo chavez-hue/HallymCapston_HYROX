@@ -25,18 +25,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     MyInfoScreen(),
   ];
 
+  void _onTapNav(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _onTapNav,
       ),
     );
   }

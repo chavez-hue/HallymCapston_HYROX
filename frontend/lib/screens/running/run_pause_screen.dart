@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/common/app_button.dart';
+import '../main/main_navigation_screen.dart';
 
 class RunPauseScreen extends StatelessWidget {
   const RunPauseScreen({super.key});
+
+  void _handleContinue(BuildContext context) {
+    // TODO: 러닝 재시작 기능 연결
+    Navigator.pop(context);
+  }
+
+  void _handleFinish(BuildContext context) {
+    // TODO: 러닝 종료 및 기록 저장 기능 연결
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MainNavigationScreen(),
+      ),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,8 +29,9 @@ class RunPauseScreen extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.symmetric(horizontal: 40),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(24),
@@ -28,33 +47,33 @@ class RunPauseScreen extends StatelessWidget {
                     color: AppColors.white,
                   ),
                 ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Take a short break and continue when you are ready.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 28),
 
-                const SizedBox(height: 24),
+                AppButton(
+                  text: 'Continue',
+                  backgroundColor: AppColors.neonGreen,
+                  foregroundColor: AppColors.black,
+                  onPressed: () => _handleContinue(context),
+                ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.neonGreen,
-                      ),
-                      child: const Text('Continue'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryOrange,
-                      ),
-                      child: const Text('Finish'),
-                    ),
-                  ],
-                )
+                const SizedBox(height: 12),
+
+                AppButton(
+                  text: 'Finish',
+                  backgroundColor: AppColors.primaryOrange,
+                  foregroundColor: AppColors.white,
+                  onPressed: () => _handleFinish(context),
+                ),
               ],
             ),
           ),

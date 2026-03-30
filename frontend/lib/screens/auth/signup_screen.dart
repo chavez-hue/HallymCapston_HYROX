@@ -4,8 +4,47 @@ import '../../constants/app_spacing.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
-class SignUpScreen extends StatelessWidget {
+class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
+
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  void _handleSignUp() {
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    // TODO: Firebase 회원가입 연결
+    // TODO: Firestore Users 컬렉션 저장
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('모든 항목을 입력해주세요')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('회원가입 기능은 추후 연동 예정입니다')),
+    );
+
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +57,6 @@ class SignUpScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-
               IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -26,9 +64,7 @@ class SignUpScreen extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
-
               const SizedBox(height: 24),
-
               const Text(
                 'Join us',
                 style: TextStyle(
@@ -37,9 +73,7 @@ class SignUpScreen extends StatelessWidget {
                   color: AppColors.black,
                 ),
               ),
-
               const SizedBox(height: 40),
-
               const Text(
                 'Name',
                 style: TextStyle(
@@ -49,14 +83,14 @@ class SignUpScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const AppTextField(
+              AppTextField(
                 hintText: 'Enter your name',
+                labelText: 'Name',
+                controller: nameController,
               ),
-
               const SizedBox(height: 20),
-
               const Text(
-                'ID',
+                'Email',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -64,12 +98,13 @@ class SignUpScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const AppTextField(
-                hintText: 'Create your ID',
+              AppTextField(
+                hintText: 'Enter your email',
+                labelText: 'Email',
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
               ),
-
               const SizedBox(height: 20),
-
               const Text(
                 'Password',
                 style: TextStyle(
@@ -79,18 +114,17 @@ class SignUpScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const AppTextField(
+              AppTextField(
                 hintText: 'Create your password',
+                labelText: 'Password',
                 obscureText: true,
+                controller: passwordController,
               ),
-
               const Spacer(),
-
-              const AppButton(
+              AppButton(
                 text: 'Create Account',
-                onPressed: null,
+                onPressed: _handleSignUp,
               ),
-
               const SizedBox(height: 24),
             ],
           ),

@@ -5,8 +5,45 @@ import '../main/main_navigation_screen.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  void _handleLogin() {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    // TODO: Firebase 로그인 연결
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이메일과 비밀번호를 입력해주세요')),
+      );
+      return;
+    }
+
+    // 임시 로그인 (현재 단계)
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MainNavigationScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +79,7 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 40),
 
               const Text(
-                'ID',
+                'Email',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -50,8 +87,12 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const AppTextField(
-                hintText: 'Enter your ID',
+
+              AppTextField(
+                hintText: 'Enter your email',
+                labelText: 'Email',
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
               ),
 
               const SizedBox(height: 20),
@@ -65,23 +106,19 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const AppTextField(
+
+              AppTextField(
                 hintText: 'Enter your password',
+                labelText: 'Password',
                 obscureText: true,
+                controller: passwordController,
               ),
 
               const Spacer(),
 
               AppButton(
                 text: 'Log in',
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MainNavigationScreen(),
-                    ),
-                  );
-                },
+                onPressed: _handleLogin,
               ),
 
               const SizedBox(height: 24),
