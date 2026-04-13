@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_spacing.dart';
 import '../../widgets/common/app_button.dart';
-import '../running/run_start_screen.dart';
 
 class RunningReadyScreen extends StatefulWidget {
   const RunningReadyScreen({super.key});
@@ -12,22 +12,14 @@ class RunningReadyScreen extends StatefulWidget {
 }
 
 class _RunningReadyScreenState extends State<RunningReadyScreen> {
-  String selectedMode = 'RANDOM';
-
-  void _selectMode(String mode) {
-    setState(() {
-      selectedMode = mode;
-    });
-  }
+  String _selectedMode = 'RANDOM';
 
   void _handleStart() {
-    // TODO: 선택한 러닝 모드에 따라 기능 연결
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const RunStartScreen(),
-      ),
-    );
+    if (_selectedMode == 'RANDOM') {
+      context.push('/roulette');
+    } else {
+      context.push('/custom-shape');
+    }
   }
 
   @override
@@ -54,37 +46,27 @@ class _RunningReadyScreenState extends State<RunningReadyScreen> {
                 'Choose your running mode',
                 style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white70,
+                  color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
 
               _ModeCard(
+                icon: Icons.casino_rounded,
                 title: 'RANDOM',
-                textColor: AppColors.primaryOrange,
-                isSelected: selectedMode == 'RANDOM',
-                onTap: () => _selectMode('RANDOM'),
+                description: '랜덤 도형이 주어집니다',
+                isSelected: _selectedMode == 'RANDOM',
+                onTap: () => setState(() => _selectedMode = 'RANDOM'),
               ),
 
               const SizedBox(height: 16),
 
               _ModeCard(
+                icon: Icons.edit_rounded,
                 title: 'CUSTOM',
-                textColor: AppColors.neonGreen,
-                isSelected: selectedMode == 'CUSTOM',
-                onTap: () => _selectMode('CUSTOM'),
-              ),
-
-              const SizedBox(height: 16),
-
-              Text(
-                'Selected: $selectedMode',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
-                ),
+                description: '직접 도형을 그려보세요',
+                isSelected: _selectedMode == 'CUSTOM',
+                onTap: () => setState(() => _selectedMode = 'CUSTOM'),
               ),
 
               const Spacer(),
@@ -106,14 +88,16 @@ class _RunningReadyScreenState extends State<RunningReadyScreen> {
 }
 
 class _ModeCard extends StatelessWidget {
+  final IconData icon;
   final String title;
-  final Color textColor;
+  final String description;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _ModeCard({
+    required this.icon,
     required this.title,
-    required this.textColor,
+    required this.description,
     required this.isSelected,
     required this.onTap,
   });
@@ -121,30 +105,78 @@ class _ModeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(24),
+      color: isSelected
+          ? AppColors.primaryOrange.withValues(alpha: 0.10)
+          : AppColors.surface,
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 28),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? textColor : Colors.transparent,
-              width: 2,
+              color: isSelected ? AppColors.primaryOrange : AppColors.border,
+              width: isSelected ? 2.0 : 1.0,
             ),
           ),
-          child: Center(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: textColor,
+          child: Row(
+            children: [
+              // 아이콘 박스
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primaryOrange
+                      : AppColors.border,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  size: 26,
+                  color: isSelected ? AppColors.white : AppColors.textSecondary,
+                ),
               ),
-            ),
+              const SizedBox(width: 20),
+
+              // 텍스트
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? AppColors.primaryOrange
+                            : AppColors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 선택 표시
+              if (isSelected)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.primaryOrange,
+                  size: 22,
+                ),
+            ],
           ),
         ),
       ),

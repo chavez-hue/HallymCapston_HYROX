@@ -1,173 +1,400 @@
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../constants/app_colors.dart';
-import '../../constants/app_spacing.dart';
-import '../../widgets/common/app_card.dart';
+import '../../core/di/injection.dart';
+import '../../features/feed/data/datasources/feed_remote_datasource.dart';
+import '../../features/feed/domain/entities/run_feed_item.dart';
+import '../../features/feed/presentation/cubit/social_cubit.dart';
 
 class SocialScreen extends StatelessWidget {
   const SocialScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> feeds = [
-      {
-        'name': 'Runner Kim',
-        'time': '10 min ago',
-        'content': 'Completed a 5km run today. Feeling stronger than yesterday.',
-      },
-      {
-        'name': 'Runner Lee',
-        'time': '25 min ago',
-        'content': 'Tried interval training for the first time. Pace was tough but fun.',
-      },
-      {
-        'name': 'Runner Park',
-        'time': '1 hour ago',
-        'content': 'Morning run completed. The weather was perfect for training.',
-      },
-      {
-        'name': 'Runner Choi',
-        'time': '2 hours ago',
-        'content': 'Set a new personal best on my 3km route today.',
-      },
-    ];
+    final uid = fb.FirebaseAuth.instance.currentUser?.uid ?? '';
 
+    return BlocProvider(
+      create: (_) => SocialCubit(
+        dataSource: getIt<FeedRemoteDataSource>(),
+        currentUserId: uid,
+      )..load(),
+      child: const _SocialView(),
+    );
+  }
+}
+
+class _SocialView extends StatelessWidget {
+  const _SocialView();
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.black,
       body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              const Text(
-                'Social',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.white,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Social',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.white,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'See what other runners are sharing.',
+                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  ),
+                  SizedBox(height: 20),
+                ],
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'See what other runners are sharing.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 20),
+            ),
+            Expanded(
+              child: BlocBuilder<SocialCubit, SocialState>(
+                builder: (context, state) {
+                  if (state is SocialLoading || state is SocialInitial) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryOrange,
+                      ),
+                    );
+                  }
 
-              Expanded(
-                child: ListView.separated(
-                  itemCount: feeds.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final feed = feeds[index];
-
-                    return AppCard(
-                      padding: const EdgeInsets.all(18),
-                      borderRadius: 20,
+                  if (state is SocialError) {
+                    return Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              const CircleAvatar(
-                                radius: 20,
-                                backgroundColor: AppColors.lightGray,
-                                child: Icon(
-                                  Icons.person,
-                                  color: AppColors.black,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      feed['name']!,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.black,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      feed['time']!,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(
-                                Icons.favorite_border_rounded,
-                                color: AppColors.black,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
+                          const Icon(Icons.error_outline,
+                              color: AppColors.textSecondary, size: 48),
+                          const SizedBox(height: 12),
                           Text(
-                            feed['content']!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
+                            state.message,
+                            style: const TextStyle(color: AppColors.textSecondary),
+                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
-                          const Row(
-                            children: [
-                              _ActionChip(label: 'Like'),
-                              SizedBox(width: 8),
-                              _ActionChip(label: 'Comment'),
-                            ],
+                          TextButton(
+                            onPressed: () => context.read<SocialCubit>().load(),
+                            child: const Text('다시 시도',
+                                style: TextStyle(color: AppColors.primaryOrange)),
                           ),
                         ],
                       ),
                     );
-                  },
-                ),
+                  }
+
+                  final items = (state as SocialLoaded).items;
+
+                  if (items.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.directions_run,
+                              color: AppColors.textSecondary, size: 56),
+                          SizedBox(height: 16),
+                          Text(
+                            '아직 공유된 러닝이 없어요',
+                            style: TextStyle(
+                                fontSize: 16, color: AppColors.textSecondary),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            '첫 번째 러닝을 완료하면 자동으로 공유됩니다!',
+                            style: TextStyle(
+                                fontSize: 13, color: AppColors.gray),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    color: AppColors.primaryOrange,
+                    backgroundColor: AppColors.surface,
+                    onRefresh: () => context.read<SocialCubit>().load(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      itemCount: items.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        return _FeedCard(item: items[index]);
+                      },
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ActionChip extends StatelessWidget {
-  final String label;
+// ── 피드 카드 ────────────────────────────────────────────────────
 
-  const _ActionChip({
-    required this.label,
-  });
+class _FeedCard extends StatelessWidget {
+  final RunFeedItem item;
+
+  const _FeedCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final dt = item.createdAt;
+    final dateLabel =
+        '${dt.year}.${dt.month.toString().padLeft(2, '0')}.${dt.day.toString().padLeft(2, '0')}  '
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+    final h = item.durationSeconds ~/ 3600;
+    final m = ((item.durationSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final s = (item.durationSeconds % 60).toString().padLeft(2, '0');
+    final timeLabel = h > 0 ? '$h:$m:$s' : '$m:$s';
+
+    final isRandom = item.mode == 'random';
+    final shapeText = item.shapeLabel ??
+        (isRandom ? 'Random' : 'Custom');
+    final modeColor =
+        isRandom ? AppColors.primaryOrange : AppColors.neonGreen;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── 헤더: 아바타 + 이름 + 날짜 + 모드칩 ──────────────
+          Row(
+            children: [
+              _Avatar(photoUrl: item.userPhotoUrl, size: 38),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.userName,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(dateLabel,
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              _ModeChip(label: item.mode.toUpperCase(), color: modeColor),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // ── 도형 이름 ─────────────────────────────────────────
+          Text(
+            shapeText,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.white,
+            ),
+          ),
+
+          // ── 유사도 (랜덤 모드만) ──────────────────────────────
+          if (isRandom && item.shapeSimilarity > 0) ...[
+            const SizedBox(height: 6),
+            _SimilarityBar(score: item.shapeSimilarity),
+          ],
+          const SizedBox(height: 12),
+
+          // ── 스탯: 거리 / 시간 / 페이스 ───────────────────────
+          Row(
+            children: [
+              _StatItem(icon: Icons.straighten,
+                  value: '${item.distanceKm.toStringAsFixed(2)} km'),
+              const SizedBox(width: 18),
+              _StatItem(icon: Icons.timer, value: timeLabel),
+              const SizedBox(width: 18),
+              _StatItem(icon: Icons.speed, value: item.avgPace),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // ── 좋아요 버튼 ───────────────────────────────────────
+          GestureDetector(
+            onTap: () => context
+                .read<SocialCubit>()
+                .toggleLike(item.id, item.isLikedByMe),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  item.isLikedByMe
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  size: 20,
+                  color: item.isLikedByMe
+                      ? AppColors.primaryOrange
+                      : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '${item.likeCount}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: item.isLikedByMe
+                        ? AppColors.primaryOrange
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 유사도 바 ─────────────────────────────────────────────────────
+
+class _SimilarityBar extends StatelessWidget {
+  final double score; // 0-100
+
+  const _SimilarityBar({required this.score});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPassed = score >= 70;
+    final barColor =
+        isPassed ? AppColors.primaryOrange : AppColors.textSecondary;
+
+    return Row(
+      children: [
+        Text(
+          '${score.toStringAsFixed(0)}점',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: barColor,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: score / 100,
+              backgroundColor: AppColors.border,
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+              minHeight: 6,
+            ),
+          ),
+        ),
+        if (isPassed) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primaryOrange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                  color: AppColors.primaryOrange.withValues(alpha: 0.5)),
+            ),
+            child: const Text(
+              'PASS',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryOrange,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── 헬퍼 위젯 ────────────────────────────────────────────────────
+
+class _Avatar extends StatelessWidget {
+  final String? photoUrl;
+  final double size;
+
+  const _Avatar({this.photoUrl, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: size / 2,
+      backgroundColor: AppColors.border,
+      backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
+      child: photoUrl == null
+          ? Icon(Icons.person_rounded,
+              size: size * 0.55, color: AppColors.textSecondary)
+          : null,
+    );
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _ModeChip({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.lightGray,
+        border: Border.all(color: color.withValues(alpha: 0.6)),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.black,
-        ),
-      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final IconData icon;
+  final String value;
+
+  const _StatItem({required this.icon, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: AppColors.textSecondary),
+        const SizedBox(width: 4),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }
