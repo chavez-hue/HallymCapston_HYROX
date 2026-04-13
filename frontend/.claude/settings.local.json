@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter run:*)",
+      "Bash(findstr /i \"error: flutter launched packages Running Dart\")",
+      "Bash(dart pub:*)",
+      "Bash(npm install:*)",
+      "Bash(firebase login:*)",
+      "Bash(\"C:\\\\Users\\\\tpdbs\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\bin\\\\flutterfire.bat\" configure:*)",
+      "Bash(npm root:*)",
+      "Bash(npm bin:*)",
+      "Bash(where firebase:*)",
+      "Bash(printf '\\\\n')",
+      "Bash(dart run:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter clean:*)"
+    ]
+  }
+}

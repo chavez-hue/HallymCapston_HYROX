@@ -39,6 +39,10 @@ class AppBottomNavBar extends StatelessWidget {
           label: 'Social',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.emoji_events_rounded),
+          label: 'Ranking',
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.person_rounded),
           label: 'My',
         ),

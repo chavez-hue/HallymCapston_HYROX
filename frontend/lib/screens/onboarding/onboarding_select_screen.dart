@@ -1,117 +1,112 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../constants/app_colors.dart';
-import '../../constants/app_spacing.dart';
-import '../../constants/app_text_styles.dart';
-import '../../widgets/common/app_button.dart';
-import '../auth/login_screen.dart';
-import '../auth/signup_screen.dart';
 
 class OnboardingSelectScreen extends StatelessWidget {
   const OnboardingSelectScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: const Color(0xFF000000),
       body: SafeArea(
         child: Padding(
-          padding: AppSpacing.screenPadding,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 16),
+              const SizedBox(height: 40),
 
+              // RRP 로고
               const Text(
                 'RRP',
-                style: AppTextStyles.logo,
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primaryOrange,
+                  letterSpacing: -1.0,
+                ),
               ),
+              const SizedBox(height: 6),
 
-              const SizedBox(height: 4),
-
+              // 서브타이틀
               const Text(
                 'Running Route Puzzle',
                 style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.black,
+                  fontSize: 13,
+                  color: AppColors.white,
                   fontWeight: FontWeight.w400,
+                  letterSpacing: 1.8,
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
 
-              Expanded(
-                child: Center(
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.lightGray,
+              // 이미지
+              SizedBox(
+                height: screenHeight * 0.6,
+                width: double.infinity,
+                child: Image.asset(
+                  'assets/images/앱 사진.png',
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                ),
+              ),
+
+              const Spacer(),
+
+              // Join us 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => context.go('/signup'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryOrange,
+                    foregroundColor: AppColors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: const Center(
-                      child: Text(
-                        'Illustration Area',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.darkGray,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                  ),
+                  child: const Text(
+                    'Join us',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Log in 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () => context.go('/login'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.white,
+                    side: const BorderSide(color: AppColors.white, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    'Log in',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 32),
-
-              /// 🔥 수정된 버튼
-              AppButton.outline(
-                text: 'Join us',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SignUpScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '이미 계정이 있으신가요?',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.darkGray,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LoginScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Log in',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.black,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
+              const SizedBox(height: 36),
             ],
           ),
         ),

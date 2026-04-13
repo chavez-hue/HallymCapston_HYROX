@@ -19,4 +19,9 @@ class AppColors {
   static const Color textSecondary = Color(0xFFBDBDBD);
 
   static const Color border = Color(0xFF2A2A2A);
+
+  // 도형 등급 색상
+  static const Color gradeBronze = Color(0xFFCD7F32);
+  static const Color gradeSilver = Color(0xFFC0C0C0);
+  static const Color gradeGold = Color(0xFFFFD700);
 }
