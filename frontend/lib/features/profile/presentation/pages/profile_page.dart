@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_spacing.dart';
@@ -8,6 +10,48 @@ import '../bloc/profile_state.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          '로그아웃',
+          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w700),
+        ),
+        content: const Text(
+          '로그아웃 하시겠습니까?',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              '로그아웃',
+              style: TextStyle(
+                color: AppColors.primaryOrange,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await fb.FirebaseAuth.instance.signOut();
+      if (context.mounted) context.go('/onboarding');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,13 +64,28 @@ class ProfilePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-              const Text(
-                'Profile',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.white,
-                ),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Profile',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _confirmLogout(context),
+                    icon: const Icon(
+                      Icons.logout_rounded,
+                      color: AppColors.textSecondary,
+                      size: 22,
+                    ),
+                    tooltip: '로그아웃',
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
               BlocBuilder<ProfileBloc, ProfileState>(

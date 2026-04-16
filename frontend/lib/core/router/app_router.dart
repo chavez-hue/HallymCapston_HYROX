@@ -21,6 +21,7 @@ import '../../screens/onboarding/onboarding_select_screen.dart';
 import '../../screens/running/custom_shape_screen.dart';
 import '../../screens/running/run_result_screen.dart';
 import '../../screens/running/roulette_screen.dart';
+import '../../screens/social/create_post_screen.dart';
 import '../../screens/splash/splash_screen.dart';
 
 // FirebaseAuth 상태 변화를 go_router의 refreshListenable로 연결
@@ -128,6 +129,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/profile',
       builder: (_, __) => const ProfilePage(),
+    ),
+    GoRoute(
+      path: '/create-post',
+      builder: (_, __) => const CreatePostScreen(),
     ),
   ],
 );
