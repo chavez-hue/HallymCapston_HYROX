@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../constants/app_colors.dart';
 import '../../core/utils/shape_similarity.dart';
 import '../../features/running/domain/entities/run_record.dart';
 import '../../features/shape/domain/entities/shape_grade.dart';
+import 'route_replay_screen.dart';
 
 // ── Screen ─────────────────────────────────────────────────────
 
@@ -113,19 +115,17 @@ class _RunResultScreenState extends State<RunResultScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Canvas ──────────────────────────────────────
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: _RouteCanvas(
-                    routePoints: _displayRoute,
-                    templatePoints: isRandom
-                        ? (_analysis?.templatePath
-                                .map((o) => _Point(o.dx, o.dy))
-                                .toList() ??
-                            [])
-                        : [],
-                    isRandom: isRandom,
-                  ),
+                // ── Canvas / Map ─────────────────────────────────
+                _ResultMapSection(
+                  record: record,
+                  displayRoute: _displayRoute,
+                  templatePoints: isRandom
+                      ? (_analysis?.templatePath
+                              .map((o) => _Point(o.dx, o.dy))
+                              .toList() ??
+                          [])
+                      : [],
+                  isRandom: isRandom,
                 ),
 
                 const SizedBox(height: 24),
@@ -180,33 +180,21 @@ class _RunResultScreenState extends State<RunResultScreen>
                 const SizedBox(height: 36),
 
                 // ── Buttons ──────────────────────────────────────
-                if (isRandom) ...[
-                  _OrangeButton(
-                    label: '홈으로',
-                    onTap: () => context.go('/home'),
+                _OutlineButton(
+                  label: '경로 보기',
+                  icon: Icons.map_outlined,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          RouteReplayScreen(route: record.route),
+                    ),
                   ),
-                ] else ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _OutlineButton(
-                          label: '피드 공유',
-                          onTap: () {
-                            // TODO: navigate to feed with record
-                            context.go('/home');
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _OrangeButton(
-                          label: '홈으로',
-                          onTap: () => context.go('/home'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
+                const SizedBox(height: 12),
+                _OrangeButton(
+                  label: '홈으로',
+                  onTap: () => context.go('/home'),
+                ),
               ],
             ),
           ),
@@ -439,6 +427,157 @@ class _ConditionRow extends StatelessWidget {
   }
 }
 
+// ── Result Map Section ──────────────────────────────────────────
+
+/// GPS 경로 유무에 따라 지도(있음) 또는 도형 캔버스(없음)를 표시한다.
+class _ResultMapSection extends StatefulWidget {
+  final RunRecord record;
+  final List<_Point> displayRoute;
+  final List<_Point> templatePoints;
+  final bool isRandom;
+
+  const _ResultMapSection({
+    required this.record,
+    required this.displayRoute,
+    required this.templatePoints,
+    required this.isRandom,
+  });
+
+  @override
+  State<_ResultMapSection> createState() => _ResultMapSectionState();
+}
+
+class _ResultMapSectionState extends State<_ResultMapSection> {
+  GoogleMapController? _mapController;
+
+  List<LatLng> get _latLngs => widget.record.route
+      .map((p) => LatLng(p.latitude, p.longitude))
+      .toList();
+
+  Set<Polyline> get _polylines {
+    final pts = _latLngs;
+    if (pts.length < 2) return {};
+    return {
+      Polyline(
+        polylineId: const PolylineId('result_route'),
+        points: pts,
+        color: AppColors.primaryOrange,
+        width: 5,
+        jointType: JointType.round,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+      ),
+    };
+  }
+
+  Set<Marker> get _markers {
+    final pts = _latLngs;
+    if (pts.isEmpty) return {};
+    return {
+      Marker(
+        markerId: const MarkerId('start'),
+        position: pts.first,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: const InfoWindow(title: '출발'),
+      ),
+      if (pts.length > 1)
+        Marker(
+          markerId: const MarkerId('end'),
+          position: pts.last,
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueOrange),
+          infoWindow: const InfoWindow(title: '도착'),
+        ),
+    };
+  }
+
+  Future<void> _fitBounds() async {
+    final pts = _latLngs;
+    if (_mapController == null || pts.isEmpty) return;
+
+    if (pts.length == 1) {
+      await _mapController!
+          .animateCamera(CameraUpdate.newLatLngZoom(pts.first, 17));
+      return;
+    }
+
+    double minLat = pts.first.latitude;
+    double maxLat = pts.first.latitude;
+    double minLng = pts.first.longitude;
+    double maxLng = pts.first.longitude;
+
+    for (final p in pts) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+
+    await _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        64,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasRoute = widget.record.route.isNotEmpty;
+
+    // GPS 경로가 없으면 도형 캔버스만 표시
+    if (!hasRoute) {
+      return AspectRatio(
+        aspectRatio: 1,
+        child: _RouteCanvas(
+          routePoints: const [],
+          templatePoints: widget.templatePoints,
+          isRandom: widget.isRandom,
+        ),
+      );
+    }
+
+    // GPS 경로가 있으면 지도 위에 오렌지 폴리라인
+    final initialPos = CameraPosition(
+      target: _latLngs.first,
+      zoom: 16,
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: GoogleMap(
+          initialCameraPosition: initialPos,
+          onMapCreated: (controller) {
+            _mapController = controller;
+            Future.delayed(
+              const Duration(milliseconds: 300),
+              _fitBounds,
+            );
+          },
+          polylines: _polylines,
+          markers: _markers,
+          myLocationEnabled: false,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          mapType: MapType.normal,
+        ),
+      ),
+    );
+  }
+}
+
 // ── Canvas ──────────────────────────────────────────────────────
 
 /// Simple wrapper type so this file doesn't depend on dart:ui Offset directly.
@@ -550,17 +689,7 @@ class _RoutePainter extends CustomPainter {
       );
     }
 
-    // Empty state label
-    if (routePoints.isEmpty) {
-      const textStyle = TextStyle(color: AppColors.textSecondary, fontSize: 14);
-      final span = TextSpan(text: 'GPS 경로 없음', style: textStyle);
-      final tp = TextPainter(text: span, textDirection: TextDirection.ltr)
-        ..layout();
-      tp.paint(
-        canvas,
-        Offset(size.width / 2 - tp.width / 2, size.height / 2 - tp.height / 2),
-      );
-    }
+    // GPS 경로 없음 → 도형(template)만 표시, 별도 텍스트 없음
   }
 
   void _drawPath(
@@ -624,6 +753,44 @@ class _StatRow extends StatelessWidget {
   }
 }
 
+class _OutlineButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _OutlineButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 20, color: AppColors.primaryOrange),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryOrange,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.primaryOrange, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OrangeButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -656,33 +823,3 @@ class _OrangeButton extends StatelessWidget {
   }
 }
 
-class _OutlineButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _OutlineButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.neonGreen,
-          side: const BorderSide(color: AppColors.neonGreen, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}

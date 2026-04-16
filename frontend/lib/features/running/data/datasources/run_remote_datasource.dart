@@ -22,35 +22,7 @@ class RunRemoteDataSourceImpl implements RunRemoteDataSource {
   Future<RunRecordModel> saveRunRecord(RunRecordModel model) async {
     final data = _toFirestoreMap(model);
     await _runsRef(model.userId).doc(model.id).set(data);
-
-    // feeds 컬렉션에 덴오마이즈된 문서 추가 (소셜 피드용)
-    await _writeFeed(model);
-
     return model;
-  }
-
-  Future<void> _writeFeed(RunRecordModel model) async {
-    try {
-      final userDoc =
-          await _db.collection('users').doc(model.userId).get();
-      final profile = userDoc.data() ?? {};
-      await _db.collection('feeds').doc(model.id).set({
-        'userId': model.userId,
-        'userName': profile['name'] as String? ?? '익명',
-        'userPhotoUrl': profile['photoUrl'] as String?,
-        'mode': model.mode,
-        'shapeLabel': model.shapeLabel,
-        'shapeSimilarity': model.shapeSimilarity,
-        'distanceKm': model.distanceKm,
-        'durationSeconds': model.durationSeconds,
-        'avgPace': model.avgPace,
-        'createdAt': Timestamp.fromDate(model.startedAt),
-        'likeCount': 0,
-        'likedBy': [],
-      });
-    } catch (_) {
-      // 피드 쓰기 실패는 러닝 저장에 영향 없음
-    }
   }
 
   @override

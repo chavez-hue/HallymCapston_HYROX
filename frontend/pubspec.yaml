@@ -1,5 +1,5 @@
 name: hyrox_app
-description: "A new Flutter project."
+description: "RRP - Running Route Puzzle. GPS 경로로 도형을 완성하는 게임형 러닝 앱."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -25,6 +25,7 @@ dependencies:
   dartz: ^0.10.1
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
+  flutter_native_splash: ^2.4.4
 
 dev_dependencies:
   flutter_test:
@@ -34,6 +35,24 @@ dev_dependencies:
   freezed: ^2.5.7
   injectable_generator: ^2.6.2
   json_serializable: ^6.8.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#000000"
+  image: assets/images/splash_logo.png
+  color_dark: "#000000"
+  image_dark: assets/images/splash_logo.png
+  android_12:
+    color: "#000000"
+    image: assets/images/splash_logo.png
+    color_dark: "#000000"
+    image_dark: assets/images/splash_logo.png
 
 flutter:
   uses-material-design: true

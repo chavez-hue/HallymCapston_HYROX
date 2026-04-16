@@ -22,6 +22,11 @@ class _SignupPageState extends State<SignupPage> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmError;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -31,29 +36,61 @@ class _SignupPageState extends State<SignupPage> {
     super.dispose();
   }
 
-  void _submit() {
+  bool _validate() {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) return;
+    String? nameError;
+    String? emailError;
+    String? passwordError;
+    String? confirmError;
 
-    if (password != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('비밀번호가 일치하지 않습니다.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-      return;
+    if (name.isEmpty) {
+      nameError = '닉네임을 입력해주세요.';
+    } else if (name.length < 2) {
+      nameError = '닉네임은 2자 이상이어야 합니다.';
     }
 
+    if (email.isEmpty) {
+      emailError = '이메일을 입력해주세요.';
+    } else if (!email.contains('@') || !email.contains('.')) {
+      emailError = '올바른 이메일 형식이 아닙니다.';
+    }
+
+    if (password.isEmpty) {
+      passwordError = '비밀번호를 입력해주세요.';
+    } else if (password.length < 8) {
+      passwordError = '비밀번호는 8자 이상이어야 합니다.';
+    }
+
+    if (confirm.isEmpty) {
+      confirmError = '비밀번호 확인을 입력해주세요.';
+    } else if (password.isNotEmpty && confirm != password) {
+      confirmError = '비밀번호가 일치하지 않습니다.';
+    }
+
+    setState(() {
+      _nameError = nameError;
+      _emailError = emailError;
+      _passwordError = passwordError;
+      _confirmError = confirmError;
+    });
+
+    return nameError == null &&
+        emailError == null &&
+        passwordError == null &&
+        confirmError == null;
+  }
+
+  void _submit() {
+    if (!_validate()) return;
     context.read<AuthBloc>().add(
           AuthEvent.signUpRequested(
-            name: name,
-            email: email,
-            password: password,
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
           ),
         );
   }
@@ -84,7 +121,7 @@ class _SignupPageState extends State<SignupPage> {
               children: [
                 const SizedBox(height: 48),
 
-                // Back button + title
+                // 뒤로가기 + 제목
                 Row(
                   children: [
                     IconButton(
@@ -123,26 +160,32 @@ class _SignupPageState extends State<SignupPage> {
 
                 const SizedBox(height: 40),
 
-                // Name
+                // 닉네임
                 _AuthTextField(
                   controller: _nameController,
                   label: '닉네임',
+                  errorText: _nameError,
+                  onChanged: (_) => setState(() => _nameError = null),
                 ),
                 const SizedBox(height: 16),
 
-                // Email
+                // 이메일
                 _AuthTextField(
                   controller: _emailController,
                   label: '이메일',
                   keyboardType: TextInputType.emailAddress,
+                  errorText: _emailError,
+                  onChanged: (_) => setState(() => _emailError = null),
                 ),
                 const SizedBox(height: 16),
 
-                // Password
+                // 비밀번호
                 _AuthTextField(
                   controller: _passwordController,
                   label: '비밀번호',
                   obscureText: _obscurePassword,
+                  errorText: _passwordError,
+                  onChanged: (_) => setState(() => _passwordError = null),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
@@ -155,13 +198,26 @@ class _SignupPageState extends State<SignupPage> {
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 6),
+                const Padding(
+                  padding: EdgeInsets.only(left: 4),
+                  child: Text(
+                    '비밀번호는 8자 이상이어야 합니다',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B6B6B),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
 
-                // Confirm password
+                // 비밀번호 확인
                 _AuthTextField(
                   controller: _confirmPasswordController,
                   label: '비밀번호 확인',
                   obscureText: _obscureConfirm,
+                  errorText: _confirmError,
+                  onChanged: (_) => setState(() => _confirmError = null),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureConfirm
@@ -178,7 +234,7 @@ class _SignupPageState extends State<SignupPage> {
 
                 const SizedBox(height: 32),
 
-                // Sign up button
+                // 가입 버튼
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
                     final isLoading = state is AuthLoading;
@@ -231,6 +287,8 @@ class _SignupPageState extends State<SignupPage> {
   }
 }
 
+// ── 입력 필드 ────────────────────────────────────────────────────
+
 class _AuthTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -238,6 +296,8 @@ class _AuthTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final Widget? suffixIcon;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
+  final String? errorText;
 
   const _AuthTextField({
     required this.controller,
@@ -246,37 +306,70 @@ class _AuthTextField extends StatelessWidget {
     this.keyboardType,
     this.suffixIcon,
     this.onSubmitted,
+    this.onChanged,
+    this.errorText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      onSubmitted: onSubmitted,
-      style: const TextStyle(color: AppColors.white, fontSize: 16),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: const Color(0xFF1A1A1A),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+    final hasError = errorText != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          onSubmitted: onSubmitted,
+          onChanged: onChanged,
+          style: const TextStyle(color: AppColors.white, fontSize: 16),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: const TextStyle(color: AppColors.textSecondary),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: const Color(0xFF1A1A1A),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: hasError
+                  ? const BorderSide(color: Colors.redAccent, width: 1.5)
+                  : BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.redAccent : AppColors.primaryOrange,
+                width: 1.5,
+              ),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: AppColors.primaryOrange, width: 1.5),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      ),
+        if (hasError) ...[
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              errorText!,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
+
+// ── 버튼 ─────────────────────────────────────────────────────────
 
 class _PrimaryButton extends StatelessWidget {
   final String text;

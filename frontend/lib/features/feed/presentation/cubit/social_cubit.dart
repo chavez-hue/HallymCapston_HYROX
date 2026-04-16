@@ -67,8 +67,35 @@ class SocialCubit extends Cubit<SocialState> {
         currentlyLiked: currentlyLiked,
       );
     } catch (_) {
-      // 실패 시 원상 복구
       emit(current);
+    }
+  }
+
+  /// 게시물 작성 후 피드를 새로고침. 실패 시 false 반환.
+  Future<bool> postFeed({
+    required String content,
+    String? runRecordId,
+    String? mode,
+    String? shapeLabel,
+    double shapeSimilarity = 0.0,
+    double distanceKm = 0.0,
+    int durationSeconds = 0,
+    String avgPace = "--'--\"",
+  }) async {
+    try {
+      await _dataSource.postRunFeed(
+        content: content,
+        runRecordId: runRecordId,
+        mode: mode,
+        shapeLabel: shapeLabel,
+        shapeSimilarity: shapeSimilarity,
+        distanceKm: distanceKm,
+        durationSeconds: durationSeconds,
+        avgPace: avgPace,
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }

@@ -44,6 +44,8 @@ class RunningPage extends StatelessWidget {
       builder: (context, state) {
         if (state is RunningIdle || state is RunningError) {
           return _IdleScreen(
+            mode: mode,
+            shapeLabel: shapeLabel,
             onStart: () => context
                 .read<RunningBloc>()
                 .add(RunningEvent.startRequested(
@@ -60,7 +62,10 @@ class RunningPage extends StatelessWidget {
             body: SafeArea(
               child: Column(
                 children: [
-                  const Expanded(flex: 6, child: GpsMapView()),
+                  Expanded(
+                    flex: 6,
+                    child: GpsMapView(mode: mode, shapeLabel: shapeLabel),
+                  ),
                   Expanded(
                     flex: 4,
                     child: RunStatsBar(
@@ -101,8 +106,14 @@ class RunningPage extends StatelessWidget {
 
 class _IdleScreen extends StatefulWidget {
   final VoidCallback onStart;
+  final String? mode;
+  final String? shapeLabel;
 
-  const _IdleScreen({required this.onStart});
+  const _IdleScreen({
+    required this.onStart,
+    this.mode,
+    this.shapeLabel,
+  });
 
   @override
   State<_IdleScreen> createState() => _IdleScreenState();
@@ -149,7 +160,7 @@ class _IdleScreenState extends State<_IdleScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            const GpsMapView(),
+            GpsMapView(mode: widget.mode, shapeLabel: widget.shapeLabel),
             Positioned(
               bottom: 48,
               left: 0,

@@ -19,6 +19,9 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  String? _emailError;
+  String? _passwordError;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -26,12 +29,38 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _submit() {
+  bool _validate() {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    if (email.isEmpty || password.isEmpty) return;
+
+    String? emailError;
+    String? passwordError;
+
+    if (email.isEmpty) {
+      emailError = '이메일을 입력해주세요.';
+    } else if (!email.contains('@') || !email.contains('.')) {
+      emailError = '올바른 이메일 형식이 아닙니다.';
+    }
+
+    if (password.isEmpty) {
+      passwordError = '비밀번호를 입력해주세요.';
+    }
+
+    setState(() {
+      _emailError = emailError;
+      _passwordError = passwordError;
+    });
+
+    return emailError == null && passwordError == null;
+  }
+
+  void _submit() {
+    if (!_validate()) return;
     context.read<AuthBloc>().add(
-          AuthEvent.signInRequested(email: email, password: password),
+          AuthEvent.signInRequested(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          ),
         );
   }
 
@@ -87,7 +116,6 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 52),
 
-                  // 입력 + 버튼 영역 (추가 좌우 여백 24px)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
@@ -96,6 +124,9 @@ class _LoginPageState extends State<LoginPage> {
                           controller: _emailController,
                           label: '이메일',
                           keyboardType: TextInputType.emailAddress,
+                          errorText: _emailError,
+                          onChanged: (_) =>
+                              setState(() => _emailError = null),
                         ),
                         const SizedBox(height: 12),
 
@@ -103,6 +134,9 @@ class _LoginPageState extends State<LoginPage> {
                           controller: _passwordController,
                           label: '비밀번호',
                           obscureText: _obscurePassword,
+                          errorText: _passwordError,
+                          onChanged: (_) =>
+                              setState(() => _passwordError = null),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -135,7 +169,6 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 24),
 
-                  // 회원가입 링크
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -176,6 +209,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+// ── 입력 필드 ────────────────────────────────────────────────────
+
 class _AuthTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -183,6 +218,8 @@ class _AuthTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final Widget? suffixIcon;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
+  final String? errorText;
 
   const _AuthTextField({
     required this.controller,
@@ -191,35 +228,71 @@ class _AuthTextField extends StatelessWidget {
     this.keyboardType,
     this.suffixIcon,
     this.onSubmitted,
+    this.onChanged,
+    this.errorText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      onSubmitted: onSubmitted,
-      style: const TextStyle(color: AppColors.white, fontSize: 15),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: const Color(0xFF1A1A1A),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+    final hasError = errorText != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          onSubmitted: onSubmitted,
+          onChanged: onChanged,
+          style: const TextStyle(color: AppColors.white, fontSize: 15),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle:
+                const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            suffixIcon: suffixIcon,
+            filled: true,
+            fillColor: const Color(0xFF1A1A1A),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: hasError
+                  ? const BorderSide(color: Colors.redAccent, width: 1.5)
+                  : BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.redAccent : AppColors.primaryOrange,
+                width: 1.5,
+              ),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryOrange, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      ),
+        if (hasError) ...[
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              errorText!,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
+
+// ── 버튼 ─────────────────────────────────────────────────────────
 
 class _PrimaryButton extends StatelessWidget {
   final String text;
